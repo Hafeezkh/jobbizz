@@ -10,6 +10,7 @@ import EmployerLogin from './components/login/EmployerLogin';
 import JobSeekerRegister from './components/register/JobSeekerRegsiter';
 import EmployerRegister from './components/register/EmployerRegister';
 import EmployerDashboard from './components/dashboard/EmployerDashboard';
+import JobSeekerDashboard from './components/dashboard/JobSeekerDashboard';
 import { auth } from './firebase/firebaseConfig';
 
 const App = () => {
@@ -51,6 +52,11 @@ const App = () => {
             path="/dashboard-Employer"
             element={isAuthenticated ? <EmployerDashboard /> : <Navigate to="/login-Employer" />}
           />
+          <Route
+            path="/dashboard-jobseeker"
+            element={isAuthenticated ? <JobSeekerDashboard /> : <Navigate to="/login-Jobseeker" />}
+          />
+
           <Route path="*" element={<Navigate to="/" />} /> {/* Redirect any unmatched routes to home */}
         </Routes>
         <Footer />

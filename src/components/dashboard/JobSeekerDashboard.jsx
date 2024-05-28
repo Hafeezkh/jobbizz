@@ -1,44 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { ref, get, update } from 'firebase/database';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for routing
+import { useNavigate } from 'react-router-dom';
 import { database, auth } from '../../firebase/firebaseConfig';
-import CandidateList from './CandidateList';
-import AddJobs from './AddJobs';
+import JobLists from './JobLists';
 
-const EmployerDashboard = () => {
-    const [companyName, setCompanyName] = useState('');
+const JobSeekerDashboard = () => {
+    const [user, setUser] = useState(null);
+    const [firstName, setFirstName] = useState('');
     const [email, setEmail] = useState('');
     const [location, setLocation] = useState('');
-    const [companyDescription, setCompanyDescription] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-    const navigate = useNavigate(); // Initialize useNavigate
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchCompanyData = async () => {
+        const fetchUserData = async () => {
             try {
-                const user = auth.currentUser;
-                if (user) {
-                    const userId = user.uid;
-                    const employerRef = ref(database, `employers/${userId}`);
-                    const snapshot = await get(employerRef);
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    setUser(currentUser);
+                    const userId = currentUser.uid;
+                    const jobSeekerRef = ref(database, `jobSeekers/${userId}`);
+                    const snapshot = await get(jobSeekerRef);
+                    console.log("Snapshot value:", snapshot.val()); // Log snapshot value
                     if (snapshot.exists()) {
-                        const employerData = snapshot.val();
-                        setCompanyName(employerData.companyName);
-                        setEmail(employerData.email);
-                        setLocation(employerData.country);
-                        setCompanyDescription(employerData.companyDescription);
+                        const jobSeekerData = snapshot.val();
+                        setFirstName(jobSeekerData.firstName);
+                        setEmail(currentUser.email);
+                        setLocation(jobSeekerData.country); // Update to use 'country'
                     } else {
-                        console.log("Employer data not found");
+                        console.log("Job seeker data not found");
                     }
                 } else {
                     console.log("User not authenticated");
                 }
             } catch (error) {
-                console.error('Error fetching employer data:', error);
+                console.error('Error fetching user data:', error);
             }
         };
-
-        fetchCompanyData();
+        
+        fetchUserData();
     }, []);
 
     const handleEdit = () => {
@@ -47,35 +47,35 @@ const EmployerDashboard = () => {
 
     const handleSave = async () => {
         try {
-            const user = auth.currentUser;
-            if (user) {
-                const userId = user.uid;
-                const employerRef = ref(database, `employers/${userId}`);
-                await update(employerRef, {
-                    companyName,
-                    country: location,
-                    companyDescription,
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                const userId = currentUser.uid;
+                const jobSeekerRef = ref(database, `jobSeekers/${userId}`);
+                await update(jobSeekerRef, {
+                    firstName,
+                    location,
                 });
                 setIsEditing(false);
             } else {
                 console.log("User not authenticated");
             }
         } catch (error) {
-            console.error('Error updating employer data:', error);
+            console.error('Error updating user data:', error);
         }
     };
 
     const handleLogout = async () => {
         try {
             await auth.signOut();
-            navigate('/login-Employer'); // Redirect to the login page after logout
+            navigate('/login-JobSeeker');
         } catch (error) {
             console.error('Error logging out:', error);
         }
     };
 
     return (
-        <div className="p-10">
+        <div className="p-10 ">
+            <div className="container mx-auto px-4 py-8 bg-gray-200">
             <div className="container mx-auto px-4 py-8 bg-gray-200">
                 <div className="mb-8">
                     <button
@@ -84,17 +84,16 @@ const EmployerDashboard = () => {
                     >
                         Logout
                     </button>
+                    <h1 className="text-4xl font-semibold mb-4">
+                        Welcome,{' '}
+                        <span className="text-blue-500">{firstName}</span>
+                    </h1>
                     {isEditing ? (
                         <div>
                             <input 
                                 type="text" 
-                                value={companyName} 
-                                onChange={(e) => setCompanyName(e.target.value)} 
-                                className="mb-2 w-full px-4 py-2 border rounded"
-                            />
-                            <textarea 
-                                value={companyDescription} 
-                                onChange={(e) => setCompanyDescription(e.target.value)} 
+                                value={firstName} 
+                                onChange={(e) => setFirstName(e.target.value)} 
                                 className="mb-2 w-full px-4 py-2 border rounded"
                             />
                             <input 
@@ -118,8 +117,6 @@ const EmployerDashboard = () => {
                         </div>
                     ) : (
                         <div>
-                            <h1 className="text-4xl font-semibold mb-4">{companyName}</h1>
-                            <p className="text-lg text-gray-800">{companyDescription}</p>
                             <p className="text-lg text-gray-800">Email: {email}</p>
                             <p className="text-lg text-gray-800">Location: {location}</p>
                             <button 
@@ -131,19 +128,16 @@ const EmployerDashboard = () => {
                         </div>
                     )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="text-2xl font-semibold mb-4">Post Jobs</h2>
-                        <AddJobs />
-                    </div>
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="text-2xl font-semibold mb-4">Candidate List</h2>
-                        <CandidateList companyName={companyName} />
-                    </div>
+                {/* Render job list component */}
+                
+               
                 </div>
+                
             </div>
+            <div className="container mx-auto px-4 py-8 bg-white"> <JobLists /></div>
+            
         </div>
     );
 };
 
-export default EmployerDashboard;
+export default JobSeekerDashboard;

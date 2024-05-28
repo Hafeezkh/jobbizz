@@ -1,26 +1,34 @@
-// JobSeekerLogin.js
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase/firebaseConfig';
 
 const JobSeekerLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate(); // Hook to navigate programmatically
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-
-        auth.signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // Signed in
-                const user = userCredential.user;
-                // Redirect or handle success as needed
-            })
-            .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                // Handle errors
-            });
+    
+        try {
+            // Sign in with email and password
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            // If successful, user is authenticated
+            const user = userCredential.user;
+            console.log('User logged in successfully:', user);
+            // Redirect to dashboard after successful login
+            navigate('/dashboard-JobSeeker');
+        } catch (error) {
+            // Handle authentication errors
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                setError('Invalid email or password');
+            } else {
+                // Handle other errors
+                setError('Login failed. Please check your credentials.');
+            }
+        }
     };
 
     return (
@@ -36,6 +44,7 @@ const JobSeekerLogin = () => {
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
                         <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 p-2 block w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:border-blue-500" />
                     </div>
+                    {error && <p className="text-red-500 mb-4">{error}</p>}
                     <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Sign In</button>
                 </form>
                 <div className="mt-4 text-sm text-gray-600">

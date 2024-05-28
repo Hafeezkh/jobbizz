@@ -10,6 +10,7 @@ const AddJobs = () => {
     const [companyName, setCompanyName] = useState('');
     const [selectedJob, setSelectedJob] = useState(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         const fetchCompanyName = async () => {
@@ -138,6 +139,41 @@ const AddJobs = () => {
         setSelectedJob(null);
     };
 
+    const handleEdit = (job) => {
+        setSelectedJob(job);
+        setIsEditing(true);
+    };
+
+    const handleSaveEdit = async () => {
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.log("User not authenticated");
+                return;
+            }
+
+            const userId = user.uid;
+            const jobRef = ref(database, `jobs/${userId}/${selectedJob.id}`);
+            await set(jobRef, selectedJob);
+
+            // Fetch the updated job list from the database
+            const snapshot = await get(ref(database, `jobs/${userId}`));
+            if (snapshot.exists()) {
+                const jobData = snapshot.val();
+                const jobList = Object.keys(jobData).map(key => ({
+                    id: key,
+                    ...jobData[key]
+                }));
+                setJobs(jobList);
+            }
+
+            setIsEditing(false);
+            setSelectedJob(null);
+        }       catch (error) {
+            console.error('Error saving edited job:', error);
+        }
+    };
+
     return (
         <div>
             <button 
@@ -160,22 +196,65 @@ const AddJobs = () => {
             )}
             <div className="grid grid-cols-1 gap-4">
                 {jobs.map(job => (
-                    <div key={job.id} className="bg-blue-500 text-white p-4 rounded shadow-md relative">
-                        <h3 className="text-xl font-semibold">{job.position}</h3>
-                        <p>Experience: {job.experience}</p>
-                        <p>Salary: {job.salary}</p>
-                        <p>Location: {job.location}</p>
-                        <p>Company: {job.companyName}</p>
-                        <div className="absolute top-2 right-2">
-                            <FaTrash 
-                                onClick={() => handleDeleteJob(job.id)}
-                                className="cursor-pointer text-red-500 text-xl" 
-                            />
-                            <FaPencilAlt 
-                                onClick={() => setSelectedJob(job.id)}
-                                className="cursor-pointer text-black text-lg ml-2" 
-                            />
-                        </div>
+                    <div key={job.id} className="bg-blue-500 text-black p-4 rounded shadow-md relative">
+                        {isEditing && selectedJob && selectedJob.id === job.id ? (
+                            <div>
+                                <input 
+                                    type="text" 
+                                    value={selectedJob.position} 
+                                    onChange={(e) => setSelectedJob({...selectedJob, position: e.target.value})} 
+                                    className="mb-2 w-full px-4 py-2 border rounded"
+                                />
+                                <input 
+                                    type="text" 
+                                    value={selectedJob.experience} 
+                                    onChange={(e) => setSelectedJob({...selectedJob, experience: e.target.value})} 
+                                    className="mb-2 w-full px-4 py-2 border rounded"
+                                />
+                                <input 
+                                    type="text" 
+                                    value={selectedJob.salary} 
+                                    onChange={(e) => setSelectedJob({...selectedJob, salary: e.target.value})} 
+                                    className="mb-2 w-full px-4 py-2 border rounded"
+                                />
+                                <input 
+                                    type="text" 
+                                    value={selectedJob.location} 
+                                    onChange={(e) => setSelectedJob({...selectedJob, location: e.target.value})} 
+                                    className="mb-2 w-full px-4 py-2 border rounded"
+                                />
+                                <button 
+                                    onClick={handleSaveEdit}
+                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2"
+                                >
+                                    Save
+                                </button>
+                                <button 
+                                    onClick={() => setIsEditing(false)}
+                                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <h3 className="text-xl font-semibold">{job.position}</h3>
+                                <p>Experience: {job.experience}</p>
+                                <p>Salary: {job.salary}</p>
+                                <p>Location: {job.location}</p>
+                                <p>Company: {job.companyName}</p>
+                                <div className="absolute top-2 right-2">
+                                    <FaTrash 
+                                        onClick={() => handleDeleteJob(job.id)}
+                                        className="cursor-pointer text-red-500 text-xl" 
+                                    />
+                                    <FaPencilAlt 
+                                        onClick={() => handleEdit(job)}
+                                        className="cursor-pointer text-black text-lg ml-2" 
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
